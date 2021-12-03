@@ -13,10 +13,10 @@ namespace SecureStorage
         /// Prepares the library for using cryptography. Before using the library, initialization is mandatory!
         /// </summary>
         /// <param name="domain">The domain allows you to use multiple instances of the library. Then use different domains to have multiple instances</param>
-        /// <param name="setSecureKeyValue">Secure function provided by the hardware to be able to save keys</param>
         /// <param name="getSecureKeyValue">Function to get keys safely save in hardware.</param>
+        /// <param name="setSecureKeyValue">Secure function provided by the hardware to be able to save keys</param>
         /// <param name="encrypted">Enable encryption (by default it is active and it is recommended not to delete it to keep your data safe)</param>
-        public Initializer(string domain, SetKeyKalueSecure setSecureKeyValue, Func<string, string> getSecureKeyValue, bool encrypted = true)
+        public Initializer(string domain, Func<string, string> getSecureKeyValue = null, SetKeyKalueSecure setSecureKeyValue = null, bool encrypted = true)
         {
             DataStorage = new DataStorage(this);
             ObjectStorage = new ObjectStorage(this);
@@ -48,8 +48,10 @@ namespace SecureStorage
             }
             if (SecureKeyValueCapability == false)
             {
-                SetKeyValue = (key, value) => SetUnsafeKeyValue(domain + "." + key, value);
-                GetKeyValue = key => GetUnsafeKeyValue(domain + "." + key);
+                var hash = _hashAlgorithm.ComputeHash(Encoding.Unicode.GetBytes(Environment.MachineName + Environment.UserName));
+                DefaultEncrypter = new NBitcoin.Key(hash);
+                SetKeyValue = (key, value) => SetKeyValue_Default(domain + "." + key, value);
+                GetKeyValue = key => GetKeyValue_Default(domain + "." + key);
             }
 
             Encrypyed = encrypted;
@@ -74,7 +76,7 @@ namespace SecureStorage
                 _baseKey[i / 2] = Convert.ToByte(baseKey.Substring(i, 2), 16);
             Initialized = true;
         }
-
+        internal static readonly IsolatedStorageFile IsoStore = IsolatedStorageFile.GetStore(IsolatedStorageScope.User | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain, null, null);
         internal static bool Initialized;
         public bool SecureKeyValueCapability;
         public readonly DataStorage DataStorage;
@@ -85,33 +87,10 @@ namespace SecureStorage
         internal SetKeyKalueSecure SetKeyValue;
         public delegate void SetKeyKalueSecure(string key, string value);
         internal Func<string, string> GetKeyValue;
-        internal readonly IsolatedStorageFile IsoStore = IsolatedStorageFile.GetStore(IsolatedStorageScope.User | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain, null, null);
         // OLD VERSION
         //internal readonly IsolatedStorageFile IsoStore = IsolatedStorageFile.GetStore(IsolatedStorageScope.User, null, null);
         private readonly HashAlgorithm _hashAlgorithm = SHA256.Create();
         private readonly byte[] _baseKey;
-        private void SetUnsafeKeyValue(string key, string value)
-        {
-            try
-            {
-                StreamWriter sw = new StreamWriter(Path.Combine(".", key));
-                sw.WriteLine(value);
-                sw.Close();
-            }
-            catch { }
-        }
-        private string GetUnsafeKeyValue(string key)
-        {
-            string result = null;
-            try
-            {
-                StreamReader sr = new StreamReader(Path.Combine(".", key));
-                result = sr.ReadLine();
-                sr.Close();
-            }
-            catch { }
-            return result;
-        }
 
         internal byte[] CryptKey(string key)
         {
@@ -130,5 +109,35 @@ namespace SecureStorage
             var cryptKey = _hashAlgorithm.ComputeHash(fullKey);
             return cryptKey;
         }
+
+        private readonly NBitcoin.Key DefaultEncrypter;
+        private void SetKeyValue_Default(string key, string value)
+        {
+            try
+            {
+                var fileStream = IsoStore.OpenFile(Path.Combine(".", key), FileMode.Create);
+                var buffer = Encoding.Unicode.GetBytes(value);
+                var encrypted = DefaultEncrypter.PubKey.Encrypt(buffer);
+                fileStream.Write(encrypted, 0, encrypted.Length);
+                fileStream.Close();
+            }
+            catch { }
+        }
+        private string GetKeyValue_Default(string key)
+        {
+            string result = null;
+            try
+            {
+                var fileStream = IsoStore.OpenFile(Path.Combine(".", key), FileMode.Open);
+                var buffer = new byte[fileStream.Length];
+                fileStream.Read(buffer, 0, buffer.Length);
+                fileStream.Close();
+                var decrypted = DefaultEncrypter.Decrypt(buffer);
+                return Encoding.Unicode.GetString(decrypted);
+            }
+            catch { }
+            return result;
+        }
+
     }
 }

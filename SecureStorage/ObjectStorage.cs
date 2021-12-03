@@ -99,9 +99,9 @@ namespace SecureStorage
         {
             var result = new List<string>();
             var objFolder = ObjFolder(type);
-            if (_secureStorage.IsoStore.DirectoryExists(DirectoryName(objFolder)))
+            if (Initializer.IsoStore.DirectoryExists(DirectoryName(objFolder)))
             {
-                var files = _secureStorage.IsoStore.GetFileNames(Path.Combine(DirectoryName(objFolder), "*" + objExtension()));
+                var files = Initializer.IsoStore.GetFileNames(Path.Combine(DirectoryName(objFolder), "*" + objExtension()));
                 foreach (var file in files)
                     result.Add(file.Substring(0, file.Length - 4));
             }
@@ -124,8 +124,8 @@ namespace SecureStorage
         public void DeleteObject(Type type, string key)
         {
             var objFolder = ObjFolder(type);
-            if (_secureStorage.IsoStore.FileExists(FileName(objFolder, key)))
-                _secureStorage.IsoStore.DeleteFile(FileName(objFolder, key));
+            if (Initializer.IsoStore.FileExists(FileName(objFolder, key)))
+                Initializer.IsoStore.DeleteFile(FileName(objFolder, key));
         }
 
         public void DeleteAllObject(Type type)
@@ -134,8 +134,8 @@ namespace SecureStorage
             foreach (var key in keys)
             {
                 var objFolder = ObjFolder(type);
-                if (_secureStorage.IsoStore.FileExists(FileName(objFolder, key)))
-                    _secureStorage.IsoStore.DeleteFile(FileName(objFolder, key));
+                if (Initializer.IsoStore.FileExists(FileName(objFolder, key)))
+                    Initializer.IsoStore.DeleteFile(FileName(objFolder, key));
             }
         }
 
@@ -162,17 +162,17 @@ namespace SecureStorage
         {
             try
             {
-                lock (_secureStorage.IsoStore)
+                lock (Initializer.IsoStore)
                 {
                     var objFolder = ObjFolder(obj);
                     var fileName = FileName(objFolder, key);
-                    if (!_secureStorage.IsoStore.DirectoryExists(DirectoryName(objFolder)))
-                        _secureStorage.IsoStore.CreateDirectory(DirectoryName(objFolder));
+                    if (!Initializer.IsoStore.DirectoryExists(DirectoryName(objFolder)))
+                        Initializer.IsoStore.CreateDirectory(DirectoryName(objFolder));
 #if !DEBUG
 					try
 					{
 #endif
-                    using (var stream = new IsolatedStorageFileStream(fileName, FileMode.Create, FileAccess.Write, _secureStorage.IsoStore))
+                    using (var stream = new IsolatedStorageFileStream(fileName, FileMode.Create, FileAccess.Write, Initializer.IsoStore))
                     {
                         var serializer = new System.Xml.Serialization.XmlSerializer(obj.GetType());
                         if (_secureStorage.Encrypyed)
@@ -215,11 +215,11 @@ namespace SecureStorage
         {
             var objFolder = ObjFolder(type);
             var fileName = FileName(objFolder, key);
-            if (!_secureStorage.IsoStore.FileExists(fileName)) return null;
+            if (!Initializer.IsoStore.FileExists(fileName)) return null;
             object obj = null;
             try
             {
-                using (Stream stream = new IsolatedStorageFileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Inheritable, _secureStorage.IsoStore))
+                using (Stream stream = new IsolatedStorageFileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Inheritable, Initializer.IsoStore))
                 {
                     var serializer = new System.Xml.Serialization.XmlSerializer(type);
                     if (_secureStorage.Encrypyed)
@@ -236,7 +236,7 @@ namespace SecureStorage
                                 // If it happens here, it means that data is saved with a different decryption key.
                                 // Uninstalling does not remove this data, so it will be deleted!				
                                 stream?.Dispose();
-                                _secureStorage.IsoStore.DeleteFile(fileName);
+                                Initializer.IsoStore.DeleteFile(fileName);
                                 return null;
                             }
                             obj = serializer.Deserialize(new MemoryStream(bytes));
@@ -251,7 +251,7 @@ namespace SecureStorage
 #if DEBUG
                 Debug.WriteLine(ex.InnerException); // Probably some properties of the object class are not serializable. Use [XmlIgnore] to exclude it.
                 Debugger.Break();
-                _secureStorage.IsoStore.DeleteFile(fileName);
+                Initializer.IsoStore.DeleteFile(fileName);
 #endif
             }
             return obj;

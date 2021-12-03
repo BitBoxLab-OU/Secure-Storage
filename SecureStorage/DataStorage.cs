@@ -19,7 +19,7 @@ namespace SecureStorage
 		{
 			if (_secureStorage.Encrypyed)
 			data = Cryptography.Encrypt(data, _secureStorage.CryptKey(key));
-			using (IsolatedStorageFileStream file = _secureStorage.IsoStore.OpenFile(FileName(key), FileMode.Create))
+			using (IsolatedStorageFileStream file = Initializer.IsoStore.OpenFile(FileName(key), FileMode.Create))
 			{
 				file.Write(data, 0, data.Length);
 			}
@@ -27,10 +27,10 @@ namespace SecureStorage
 		public  byte[] LoadData(string key)
 		{
 			var fileName = FileName(key);
-			if (!_secureStorage.IsoStore.FileExists(fileName))
+			if (!Initializer.IsoStore.FileExists(fileName))
 				return null;
 			byte[] data;
-			using (IsolatedStorageFileStream file = _secureStorage.IsoStore.OpenFile(fileName, FileMode.Open))
+			using (IsolatedStorageFileStream file = Initializer.IsoStore.OpenFile(fileName, FileMode.Open))
 			{
 				data = new byte[file.Length];
 				file.Read(data, 0, (int)file.Length);
@@ -46,11 +46,11 @@ namespace SecureStorage
 			{
 				new Thread(() =>
 				{
-					lock (_secureStorage.IsoStore)
+					lock (Initializer.IsoStore)
 					{
 						try
 						{
-							using (var stream = new IsolatedStorageFileStream(FileName(key), FileMode.Create, FileAccess.Write, _secureStorage.IsoStore))
+							using (var stream = new IsolatedStorageFileStream(FileName(key), FileMode.Create, FileAccess.Write, Initializer.IsoStore))
 							{
 								var formatter = new BinaryFormatter();
 								if (_secureStorage.Encrypyed)
@@ -81,11 +81,11 @@ namespace SecureStorage
 
 		public  object BinaryDeserialize(string key)
 		{
-			if (!_secureStorage.IsoStore.FileExists(FileName(key))) return null;
+			if (!Initializer.IsoStore.FileExists(FileName(key))) return null;
 			object obj = null;
 			try
 			{
-				Stream stream = new IsolatedStorageFileStream(FileName(key), FileMode.Open, FileAccess.Read, FileShare.Inheritable, _secureStorage.IsoStore);
+				Stream stream = new IsolatedStorageFileStream(FileName(key), FileMode.Open, FileAccess.Read, FileShare.Inheritable, Initializer.IsoStore);
 				try
 				{
 					var formatter = new BinaryFormatter();
