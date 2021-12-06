@@ -48,7 +48,7 @@ namespace SecureStorage
             }
             if (SecureKeyValueCapability == false)
             {
-                var hash = _hashAlgorithm.ComputeHash(Encoding.Unicode.GetBytes(Environment.MachineName + Environment.UserName));
+                var hash = _hashAlgorithm.ComputeHash(Encoding.Unicode.GetBytes(domain + Environment.MachineName + Environment.UserName));
                 DefaultEncrypter = new NBitcoin.Key(hash);
                 SetKeyValue = (key, value) => SetKeyValue_Default(domain + "." + key, value);
                 GetKeyValue = key => GetKeyValue_Default(domain + "." + key);
@@ -111,11 +111,12 @@ namespace SecureStorage
         }
 
         private readonly NBitcoin.Key DefaultEncrypter;
-        private void SetKeyValue_Default(string key, string value)
+        public void SetKeyValue_Default(string key, string value)
         {
+            var filename = BitConverter.ToString(_hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(key + Domain))).Replace("-", "");
             try
             {
-                var fileStream = IsoStore.OpenFile(Path.Combine(".", key), FileMode.Create);
+                var fileStream = IsoStore.OpenFile(Path.Combine(".", filename), FileMode.Create);
                 var buffer = Encoding.Unicode.GetBytes(value);
                 var encrypted = DefaultEncrypter.PubKey.Encrypt(buffer);
                 fileStream.Write(encrypted, 0, encrypted.Length);
@@ -123,20 +124,23 @@ namespace SecureStorage
             }
             catch { }
         }
-        private string GetKeyValue_Default(string key)
+        public string GetKeyValue_Default(string key)
         {
-            string result = null;
+            var filename = BitConverter.ToString(_hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(key + Domain))).Replace("-", "");
             try
             {
-                var fileStream = IsoStore.OpenFile(Path.Combine(".", key), FileMode.Open);
-                var buffer = new byte[fileStream.Length];
-                fileStream.Read(buffer, 0, buffer.Length);
-                fileStream.Close();
-                var decrypted = DefaultEncrypter.Decrypt(buffer);
-                return Encoding.Unicode.GetString(decrypted);
+                if (IsoStore.FileExists(Path.Combine(".", filename)))
+                {
+                    var fileStream = IsoStore.OpenFile(Path.Combine(".", filename), FileMode.Open);
+                    var buffer = new byte[fileStream.Length];
+                    fileStream.Read(buffer, 0, buffer.Length);
+                    fileStream.Close();
+                    var decrypted = DefaultEncrypter.Decrypt(buffer);
+                    return Encoding.Unicode.GetString(decrypted);
+                }
             }
             catch { }
-            return result;
+            return null;
         }
 
     }
