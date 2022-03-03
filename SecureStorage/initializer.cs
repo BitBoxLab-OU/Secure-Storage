@@ -29,7 +29,6 @@ namespace SecureStorage
                 SetKeyValue = (key, value) => setSecureKeyValue(domain + "." + key, value);
                 GetKeyValue = key => getSecureKeyValue(domain + "." + key);
                 //Check that saving keys and values are working correctly
-#if DEBUG
                 try
                 {
                     SetKeyValue("test", "test");
@@ -44,7 +43,6 @@ namespace SecureStorage
                     Debug.WriteLine(ex.ToString());
                     Debugger.Break();
                 }
-#endif
             }
             if (SecureKeyValueCapability == false)
             {
@@ -124,7 +122,7 @@ namespace SecureStorage
             }
             catch { }
         }
-        public string GetKeyValue_Default(string key)
+        private string GetKeyValue_Default(string key)
         {
             var filename = BitConverter.ToString(_hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(key + Domain))).Replace("-", "");
             try
