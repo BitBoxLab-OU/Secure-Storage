@@ -1,15 +1,16 @@
 ﻿namespace SecureStorage
 {
+	/// <summary>
+	/// Class to encrypt and decrypt the data.
+	/// </summary>
 	public static class Cryptography
 	{
-		internal static bool Initalialized;
-
 		/// <summary>
 		/// Encrypt a sequence of bytes using the Bitcoin cryptographic algorithm
 		/// </summary>
 		/// <param name="clearBytes">Sequence of bytes to encrypt</param>
 		/// <param name="password">Key for encryption</param>
-		/// <returns></returns>
+		/// <returns>Encrypted bytes</returns>
 		public static byte[] Encrypt(byte[] clearBytes, byte[] password)
 		{
 			var privateKey = new NBitcoin.Key(password, fCompressedIn: false); // generate a random private key
@@ -22,7 +23,7 @@
 		/// </summary>
 		/// <param name="cipherBytes">Data to decrypt</param>
 		/// <param name="password">Encryption key </param>
-		/// <returns></returns>
+		/// <returns>Decrypted bytes</returns>
 		public static byte[] Decrypt(byte[] cipherBytes, byte[] password)
 		{
 			var privateKey = new NBitcoin.Key(password, fCompressedIn: false); // generate a random private key

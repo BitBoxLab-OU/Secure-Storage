@@ -7,15 +7,28 @@ using System.Threading;
 
 namespace SecureStorage
 {
+	/// <summary>
+	/// This class has been conceived to be able to save data in a safe way, that is: The saved data of any application cannot be considered safe if it will be accessible in clear text to other applications or resident software. For encryption to be active, the library must be initialized using the Initializer class, enabling encryption (encryption is enabled by default).
+	/// </summary>
 	public class DataStorage
 	{
+		/// <summary>
+		/// Initialized object storageusing the Initializer class, enabling encryption (encryption is enabled by default).
+        /// </summary>
+		/// <param name="secureStorage"> Storage name</param>
 		public DataStorage(Initializer secureStorage)
 		{
 			_secureStorage = secureStorage;
 		}
 		private Initializer _secureStorage;
 		private  string FileName(string key) => Path.Combine(_secureStorage.Domain, key) + ".dat";
-		public  void SaveData(byte[] data, string key)
+
+		/// <summary>
+		/// This method is used to encrypt and securely save data with their public properties.
+		/// </summary>
+		/// <param name="data"> Data to save</param>
+		/// <param name="key">Key used to save the Data.</param>
+		public void SaveData(byte[] data, string key)
 		{
 			if (_secureStorage.Encrypyed)
 			data = Cryptography.Encrypt(data, _secureStorage.CryptKey(key));
@@ -24,7 +37,13 @@ namespace SecureStorage
 				file.Write(data, 0, data.Length);
 			}
 		}
-		public  byte[] LoadData(string key)
+
+		/// <summary>
+		/// This method is used to load a previously saved data.
+		/// </summary>
+		/// <param name="key">Key used to save data</param>
+		/// <returns>Saved data</returns>
+		public byte[] LoadData(string key)
 		{
 			var fileName = FileName(key);
 			if (!Initializer.IsoStore.FileExists(fileName))
@@ -40,6 +59,11 @@ namespace SecureStorage
 			return data;
 		}
 
+		/// <summary>
+		/// Serialize the object using the key.
+		/// </summary>
+		/// <param name="obj">Object to be serialized</param>
+		/// <param name="key">Key used to serialize the object</param>
 		public  void BinarySerialize(object obj, string key)
 		{
 			try
@@ -79,7 +103,12 @@ namespace SecureStorage
 			}
 		}
 
-		public  object BinaryDeserialize(string key)
+		/// <summary>
+		/// Deserialize the binarydata to object using the key.
+		/// </summary>
+		/// <param name="key">Key used to deserialize </param>
+		/// <returns>object</returns>
+		public object BinaryDeserialize(string key)
 		{
 			if (!Initializer.IsoStore.FileExists(FileName(key))) return null;
 			object obj = null;

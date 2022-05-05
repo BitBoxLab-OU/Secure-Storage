@@ -74,6 +74,43 @@ namespace SecureStorage
                 _baseKey[i / 2] = Convert.ToByte(baseKey.Substring(i, 2), 16);
             Initialized = true;
         }
+
+        /// <summary>
+        /// Delete all the directory with all the content in it.
+        /// </summary>
+        public void Destroy()
+        {
+            try
+            {
+                DeleteDirectoryRecursively(IsoStore, Domain);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Delete a specific file from a directory.
+        /// </summary>
+        /// <param name="storageFile">Name of the file to delete</param>
+        /// <param name="dirName">Directory Name to delete the file from it</param>
+        static void DeleteDirectoryRecursively(IsolatedStorageFile storageFile, string dirName)
+        {
+            var pattern = dirName + @"\*";
+            var files = storageFile.GetFileNames(pattern);
+            foreach (var fName in files)
+            {
+                storageFile.DeleteFile(Path.Combine(dirName, fName));
+            }
+            var dirs = storageFile.GetDirectoryNames(pattern);
+            foreach (var dName in dirs)
+            {
+                DeleteDirectoryRecursively(storageFile, Path.Combine(dirName, dName));
+            }
+            storageFile.DeleteDirectory(dirName);
+        }
+
         internal static readonly IsolatedStorageFile IsoStore = IsolatedStorageFile.GetStore(IsolatedStorageScope.User | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain, null, null);
         internal static bool Initialized;
         public bool SecureKeyValueCapability;
@@ -109,6 +146,11 @@ namespace SecureStorage
         }
 
         private readonly NBitcoin.Key DefaultEncrypter;
+        /// <summary>
+        /// Secure function provided by the hardware to be able to save keys
+        /// </summary>
+        /// <param name="key">Key to identify the users and will be used to save and delete data on the device</param>
+        /// <param name="value"> Encrypted Key Value</param>
         public void SetKeyValue_Default(string key, string value)
         {
             var filename = BitConverter.ToString(_hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(key + Domain))).Replace("-", "");

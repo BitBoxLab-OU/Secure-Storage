@@ -13,6 +13,10 @@ namespace SecureStorage
     /// </summary>
     public class ObjectStorage
     {
+        /// <summary>
+        /// Initialized object storageusing the Initializer class, enabling encryption (encryption is enabled by default).
+        /// </summary>
+        /// <param name="secureStorage">storage name</param>
         public ObjectStorage(Initializer secureStorage) => _secureStorage = secureStorage;
         private readonly Initializer _secureStorage;
 
@@ -65,7 +69,7 @@ namespace SecureStorage
         /// </summary>
         /// <param name="type">The type of the object you want to load. Represents type declarations: class types, interface types, array types, value types, enumeration types, type parameters, generic type definitions, and open or closed constructed generic types</param>
         /// <param name="key">The key that was used to save the object</param>
-        /// <returns></returns>
+        /// <returns>saved object</returns>
         /// <exception cref="ArgumentException"></exception>
         public object LoadObject(Type type, string key)
         {
@@ -107,7 +111,11 @@ namespace SecureStorage
             }
             return result.ToArray();
         }
-
+        /// <summary>
+        /// Get all the save objects by the type it was saved.
+        /// </summary>
+        /// <param name="type">The type of object you want to get </param>
+        /// <returns>The objects by type</returns>
         public object[] GetAllObjects(Type type)
         {
             var result = new List<object>();
@@ -120,14 +128,21 @@ namespace SecureStorage
             }
             return result.ToArray();
         }
-
+        /// <summary>
+        /// Delete the saved object.
+        /// </summary>
+        /// <param name="type">The type of object</param>
+        /// <param name="key"> The key that was used to save the object</param>
         public void DeleteObject(Type type, string key)
         {
             var objFolder = ObjFolder(type);
             if (Initializer.IsoStore.FileExists(FileName(objFolder, key)))
                 Initializer.IsoStore.DeleteFile(FileName(objFolder, key));
         }
-
+        /// <summary>
+        /// Delete all the object of certain type
+        /// </summary>
+        /// <param name="type">The type of the object</param>
         public void DeleteAllObject(Type type)
         {
             var keys = GetAllKey(type);
